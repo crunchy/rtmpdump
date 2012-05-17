@@ -319,7 +319,7 @@ AMFProp_SetName(AMFObjectProperty *prop, AVal *name)
   prop->p_name = *name;
 }
 
-AMFDataType
+RTMPAMFDataType
 AMFProp_GetType(AMFObjectProperty *prop)
 {
   return prop->p_type;

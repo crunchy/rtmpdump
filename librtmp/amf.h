@@ -46,7 +46,7 @@ extern "C"
     AMF_XML_DOC, AMF_TYPED_OBJECT,
     AMF_AVMPLUS,		/* switch to AMF3 */
     AMF_INVALID = 0xff
-  } AMFDataType;
+  } RTMPAMFDataType;
 
   typedef enum
   { AMF3_UNDEFINED = 0, AMF3_NULL, AMF3_FALSE, AMF3_TRUE,
@@ -73,7 +73,7 @@ extern "C"
   typedef struct AMFObjectProperty
   {
     AVal p_name;
-    AMFDataType p_type;
+    RTMPAMFDataType p_type;
     union
     {
       double p_number;
@@ -118,7 +118,7 @@ extern "C"
   AMFObjectProperty *AMF_GetProp(AMFObject * obj, const AVal * name,
 				 int nIndex);
 
-  AMFDataType AMFProp_GetType(AMFObjectProperty * prop);
+  RTMPAMFDataType AMFProp_GetType(AMFObjectProperty * prop);
   void AMFProp_SetNumber(AMFObjectProperty * prop, double dval);
   void AMFProp_SetBoolean(AMFObjectProperty * prop, int bflag);
   void AMFProp_SetString(AMFObjectProperty * prop, AVal * str);
