@@ -658,11 +658,8 @@ int RTMP_SetOpt(RTMP *r, const AVal *opt, AVal *arg)
   return TRUE;
 }
 
-int RTMP_SetupURL(RTMP *r, char *url_orig)
+int RTMP_SetupURL(RTMP *r, char *url)
 {
-  char *url;
-  memcpy(url, url_orig, strlen( url_orig ));
-
   AVal opt, arg;
   char *p1, *p2, *ptr = strchr(url, ' ');
   int ret, len;
@@ -752,8 +749,6 @@ int RTMP_SetupURL(RTMP *r, char *url_orig)
 	  r->Link.tcUrl.av_len = strlen(url);
 	}
     }
-
-free(url);
 
 #ifdef CRYPTO
   if ((r->Link.lFlags & RTMP_LF_SWFV) && r->Link.swfUrl.av_len)
