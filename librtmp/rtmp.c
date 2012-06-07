@@ -3706,6 +3706,33 @@ DecodeTEA(AVal *key, AVal *text)
 static int
 HTTP_Post(RTMP *r, RTMPTCmd cmd, const char *buf, int len)
 {
+    // obey the HTTP keep alive command
+    if(r->m_msgCounter > 1 && r->m_maxHTTPKeepAlives > 0 && r->m_msgCounter % (r->m_maxHTTPKeepAlives-1) == 0) {
+        closesocket(r->m_sb.sb_socket);
+        
+        r->m_sb.sb_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        struct sockaddr_in service;
+        if (!r->Link.hostname.av_len)
+            return FALSE;
+        
+        memset(&service, 0, sizeof(struct sockaddr_in));
+        service.sin_family = AF_INET;
+        
+        if (r->Link.socksport)
+        {
+            /* Connect via SOCKS */
+            if (!add_addr_info(&service, &r->Link.sockshost, r->Link.socksport))
+                return FALSE;
+        }
+        else
+        {
+            /* Connect directly */
+            if (!add_addr_info(&service, &r->Link.hostname, r->Link.port))
+                return FALSE;
+        }
+        
+        connect(r->m_sb.sb_socket, (struct sockaddr *)&service, sizeof(struct sockaddr));
+    }
   char hbuf[512];
   int hlen = snprintf(hbuf, sizeof(hbuf), "POST /%s%s/%d HTTP/1.1\r\n"
     "Host: %.*s:%d\r\n"
@@ -3738,6 +3765,21 @@ HTTP_read(RTMP *r, int fill)
   if (strncmp(r->m_sb.sb_start, "HTTP/1.1 200 ", 13))
     return -1;
   ptr = r->m_sb.sb_start + sizeof("HTTP/1.1 200");
+    
+    //set the Keep-Alive
+    char* max_start = strstr(ptr, "Keep-Alive:");
+    if(max_start) {
+        max_start = strstr(max_start, "max=");
+        if(max_start) {
+            char* max_end = strstr(max_start, "\r\n");
+            int max_len = max_end-max_start-strlen("max=");
+            char* max_ka = malloc(max_len);
+            memcpy(max_ka, max_start+strlen("max="), max_len);
+            r->m_maxHTTPKeepAlives = atoi(max_ka);
+            free(max_ka);
+        }
+    }
+    
   while ((ptr = strstr(ptr, "Content-"))) {
     if (!strncasecmp(ptr+8, "length:", 7)) break;
     ptr += 8;

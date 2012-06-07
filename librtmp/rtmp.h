@@ -248,6 +248,7 @@ extern "C"
     uint8_t m_bPlaying;
     uint8_t m_bSendEncoding;
     uint8_t m_bSendCounter;
+    uint8_t m_maxHTTPKeepAlives;
 
     int m_numInvokes;
     int m_numCalls;
