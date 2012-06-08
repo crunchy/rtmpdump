@@ -249,6 +249,8 @@ extern "C"
     uint8_t m_bSendEncoding;
     uint8_t m_bSendCounter;
     uint8_t m_maxHTTPKeepAlives;
+    uint16_t m_HTTPKeepAliveTimeout;
+    uint32_t m_lastHTTPTransmission;
 
     int m_numInvokes;
     int m_numCalls;

@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
 #include "rtmp_sys.h"
 #include "log.h"
@@ -3707,7 +3708,8 @@ static int
 HTTP_Post(RTMP *r, RTMPTCmd cmd, const char *buf, int len)
 {
     // obey the HTTP keep alive command
-    if(r->m_msgCounter > 1 && r->m_maxHTTPKeepAlives > 0 && r->m_msgCounter % (r->m_maxHTTPKeepAlives-1) == 0) {
+    if((r->m_lastHTTPTransmission > 0 && r->m_HTTPKeepAliveTimeout > 0 && (time(NULL) - r->m_lastHTTPTransmission) > r->m_HTTPKeepAliveTimeout-1) ||
+       (r->m_msgCounter > 1 && r->m_maxHTTPKeepAlives > 0 && r->m_msgCounter % (r->m_maxHTTPKeepAlives-1) == 0)) {
         closesocket(r->m_sb.sb_socket);
         
         r->m_sb.sb_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -3733,6 +3735,7 @@ HTTP_Post(RTMP *r, RTMPTCmd cmd, const char *buf, int len)
         
         connect(r->m_sb.sb_socket, (struct sockaddr *)&service, sizeof(struct sockaddr));
     }
+    r->m_lastHTTPTransmission = time(NULL);
   char hbuf[512];
   int hlen = snprintf(hbuf, sizeof(hbuf), "POST /%s%s/%d HTTP/1.1\r\n"
     "Host: %.*s:%d\r\n"
@@ -3767,9 +3770,19 @@ HTTP_read(RTMP *r, int fill)
   ptr = r->m_sb.sb_start + sizeof("HTTP/1.1 200");
     
     //set the Keep-Alive
-    char* max_start = strstr(ptr, "Keep-Alive:");
-    if(max_start) {
-        max_start = strstr(max_start, "max=");
+    char* ka_start = strstr(ptr, "Keep-Alive:");
+    if(ka_start) {
+        char* timeout_start = strstr(ka_start, "timeout=");
+        if(timeout_start) {
+            char* timeout_end = strstr(timeout_start, ",");
+            int timeout_len = timeout_end-timeout_start-strlen("timeout=");
+            char* ka_timeout = malloc(timeout_len);
+            memcpy(ka_timeout, timeout_start+strlen("timeout="), timeout_len);
+            r->m_HTTPKeepAliveTimeout = atoi(ka_timeout);
+            free(ka_timeout);
+        }
+        
+        char* max_start = strstr(ka_start, "max=");
         if(max_start) {
             char* max_end = strstr(max_start, "\r\n");
             int max_len = max_end-max_start-strlen("max=");
